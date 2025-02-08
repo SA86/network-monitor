@@ -10,9 +10,13 @@ Item {
     
     property var systemStats: ({
         cpu_usage: 0,
+        cpu_temp: 0,
         memory_usage: 0,
         disk_usage: 0,
-        network_speed: 0
+        network_speed: 0,
+        gpu_temp: 0,
+        gpu_utilization: 0,
+        gpu_memory_utilization: 0
     })
     
     DataSource {
@@ -30,7 +34,7 @@ Item {
     
     Plasmoid.fullRepresentation: Item {
         Layout.minimumWidth: 300
-        Layout.minimumHeight: 200
+        Layout.minimumHeight: 300
         
         ColumnLayout {
             anchors.fill: parent
@@ -48,23 +52,89 @@ Item {
                 columnSpacing: PlasmaCore.Units.largeSpacing
                 Layout.margins: PlasmaCore.Units.smallSpacing
                 
-                PlasmaComponents.Label { text: "CPU Usage:" }
+                // CPU Section
+                PlasmaComponents.Label {
+                    text: "CPU"
+                    font.bold: true
+                    Layout.columnSpan: 2
+                    Layout.topMargin: PlasmaCore.Units.smallSpacing
+                }
+                
+                PlasmaComponents.Label { text: "Usage:" }
                 PlasmaComponents.Label { text: root.systemStats.cpu_usage + "%" }
                 
-                PlasmaComponents.Label { text: "Memory Usage:" }
+                PlasmaComponents.Label { text: "Temperature:" }
+                PlasmaComponents.Label { 
+                    text: root.systemStats.cpu_temp !== null ? root.systemStats.cpu_temp + "°C" : "N/A"
+                }
+                
+                // Memory Section
+                PlasmaComponents.Label {
+                    text: "Memory"
+                    font.bold: true
+                    Layout.columnSpan: 2
+                    Layout.topMargin: PlasmaCore.Units.smallSpacing
+                }
+                
+                PlasmaComponents.Label { text: "Usage:" }
                 PlasmaComponents.Label { text: root.systemStats.memory_usage + "%" }
+                
+                // Storage & Network
+                PlasmaComponents.Label {
+                    text: "System"
+                    font.bold: true
+                    Layout.columnSpan: 2
+                    Layout.topMargin: PlasmaCore.Units.smallSpacing
+                }
                 
                 PlasmaComponents.Label { text: "Disk Usage:" }
                 PlasmaComponents.Label { text: root.systemStats.disk_usage + "%" }
                 
                 PlasmaComponents.Label { text: "Network Speed:" }
                 PlasmaComponents.Label { text: root.systemStats.network_speed + " MB/s" }
+                
+                // GPU Section (only shown if GPU is available)
+                PlasmaComponents.Label {
+                    text: "GPU"
+                    font.bold: true
+                    Layout.columnSpan: 2
+                    Layout.topMargin: PlasmaCore.Units.smallSpacing
+                    visible: dataSource.hasGpu
+                }
+                
+                PlasmaComponents.Label { 
+                    text: "Temperature:"
+                    visible: dataSource.hasGpu
+                }
+                PlasmaComponents.Label { 
+                    text: root.systemStats.gpu_temp !== null ? root.systemStats.gpu_temp + "°C" : "N/A"
+                    visible: dataSource.hasGpu
+                }
+                
+                PlasmaComponents.Label { 
+                    text: "Utilization:"
+                    visible: dataSource.hasGpu
+                }
+                PlasmaComponents.Label { 
+                    text: root.systemStats.gpu_utilization !== null ? root.systemStats.gpu_utilization + "%" : "N/A"
+                    visible: dataSource.hasGpu
+                }
+                
+                PlasmaComponents.Label { 
+                    text: "Memory Usage:"
+                    visible: dataSource.hasGpu
+                }
+                PlasmaComponents.Label { 
+                    text: root.systemStats.gpu_memory_utilization !== null ? root.systemStats.gpu_memory_utilization + "%" : "N/A"
+                    visible: dataSource.hasGpu
+                }
             }
             
             PlasmaComponents.TextField {
                 id: serverAddress
                 placeholderText: "Server Address (e.g., 192.168.1.100:8080)"
                 Layout.fillWidth: true
+                Layout.topMargin: PlasmaCore.Units.smallSpacing
             }
             
             PlasmaComponents.Label {
@@ -92,7 +162,7 @@ Item {
     }
     
     Timer {
-        interval: 1000
+        interval: 3000  // Changed from 1000 to 3000 for 3-second polling
         running: dataSource.connected
         repeat: true
         onTriggered: {
